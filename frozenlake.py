@@ -229,7 +229,7 @@ class FrozenLake:
             # self.visited stores the grids which has been visited by dfs algorithm
             self.visited = [[0 for _ in range(self.lake_num_col)] for _ in range(self.lake_num_row)]
 
-            # do Depth-First-Search (DFS) to check if there is a valid path from start to frisbee
+            # do Depth-First-Search (DFS) to check if there is a valid path from start state to frisbee state
             valid_path = self.depth_first_search(state = self.agent_state)
             if not valid_path:
                 print("Holes picked were:", self.holes_picked)
@@ -1086,23 +1086,23 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
         combined_goal_percentage_reached_dict (list): combined goal percentage reached dictonaries contained in a list.
         label (list): list of algorithm names used.
     """
+    colors = ['r','g','b']
+    colors = colors[:len(label)] # get number of graphs to plot
     plt.figure(figsize=(20,10))
+    
     # Plot 1: combined cumulative reward graphs
     plt.subplot(2,2,1)
-    colors = ['r','g','b']
     assert len(combined_cumulative_reward_list) == len(label)
     for i, c in enumerate(colors):
         plt.plot(np.arange(len(combined_cumulative_reward_list[i])), combined_cumulative_reward_list[i], c, label=label[i], linewidth=1)
     plt.title('Cumulative Reward vs Episode')
     plt.xlabel('Episode')
     plt.ylabel('Cumulative Reward')
-    # plt.legend(loc='best')
 
     # Plot 2: Moving Average Rewards vs Episodes
     # Define the window size for the moving average
     plt.subplot(2, 2, 2)
     window_size = 50
-    colors = ['r','g','b']
     assert len(combined_total_reward_list) == len(label)
     for i, c in enumerate(colors):
         # Calculate the moving average
@@ -1110,15 +1110,13 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
         # Define the x-axis (i.e., the episode or iteration number)
         x = np.arange(window_size-1, len(combined_total_reward_list[i]))
         plt.plot(x, moving_avg, c, label=label[i], linewidth=1)
-   
     plt.title('Moving Average Reward over Episodes')
     plt.xlabel('Episode')
     plt.ylabel('Average Reward')
-    # plt.legend(loc='best')
+
     # Plot 3: Q Convergence based on percentage change in policy for each episode
     plt.subplot(2, 2, 3)
     window_size = 50
-    colors = ['r','g','b']
     assert len(combined_q_sae_list) == len(label)
     for i, c in enumerate(colors):
         # Calculate the moving average
@@ -1126,18 +1124,15 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
         # Define the x-axis (i.e., the episode or iteration number)
         x = np.arange(window_size-1, len(combined_q_sae_list[i]))
         plt.plot(x, q_sae_moving_avg, c, label=label[i], linewidth=1)
-
     plt.title('Q Convergence based on SAE')
     plt.xlabel('Episode')
     plt.ylabel('Q SAE ')
-    # plt.legend(loc='best')
 
     # Plot 4: combined policy difference graphs
     assert len(combined_policy_diff_list) == len(label)
     plt.subplot(2,2,4)
     for i, c in enumerate(colors):
         plt.plot(np.arange(len(combined_policy_diff_list[i])), combined_policy_diff_list[i], c, label=label[i], linewidth=1)
-
     plt.title('Greedy Policy Percentage Change vs Episode')
     plt.xlabel('Episode')
     plt.ylabel('Greedy Policy Percentage Change')
@@ -1145,7 +1140,7 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
     plt.show()
     plt.savefig(os.path.join(save_dir,'combined_performance_graphs.png'))
 
-    # Plot 7: Plot Exploration Count
+    # Plot 5: Plot Exploration Count
     assert len(combined_q_sae_list) == len(label)
     plt.figure(figsize=(16,4))
     for i, c in enumerate(colors):
@@ -1154,7 +1149,6 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
         plt.xlabel("Episodes")
         plt.ylabel("Exploitation Frequency")
         plt.title(label[i])
-    
     plt.show() 
     plt.savefig(os.path.join(save_dir,'exploration_count.png'))
 
@@ -1172,12 +1166,9 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
         plt.xlabel("Episodes")
         plt.ylabel("Goal Reached Percentage (%)")
         plt.title(label[i])
-    
-    
     plt.suptitle(f"Goal Reached Percentage during training with bin interval of {goal_percentage_reached_dict['epi_interval']} episodes")
     plt.show()
     plt.savefig(os.path.join(save_dir,'goal_reached_percentage.png'))
-
 
 def get_parser():
     parser = argparse.ArgumentParser(description="FrozenLake RL")
@@ -1222,7 +1213,7 @@ if __name__ == "__main__":
 
 
     root_dir = os.path.join('/home/ngzhili/FrozenLake_RL/',args.root_dir)
-    algorithm_list = ["monte_carlo_first_visit_no_exploring_starts", "sarsa","qlearning"]
+    algorithm_list = ["sarsa","qlearning"] #["monte_carlo_first_visit_no_exploring_starts", "sarsa","qlearning"]
     combined_total_reward_list = []
     combined_policy_diff_list = []
     combined_cumulative_reward_list = []
