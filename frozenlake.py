@@ -4,6 +4,8 @@ from tqdm import tqdm
 import copy
 import random
 import matplotlib.pyplot as plt
+import argparse
+import os
 
 class FrozenLake:
     """ Initialise Frozen Lake Environment Class """
@@ -42,7 +44,7 @@ class FrozenLake:
                                 3:'U'}
         # initialise Q-Table of size: (number of states, number of actions)
         self.qtable = np.zeros([len(self.state_coord_map), len(self.action_coord_map)])
-        
+
         # initialise terminal states index by looping through the lake
         self.terminal_states = set()
         for row in range(len(self.lake)):
@@ -640,7 +642,13 @@ class FrozenLake:
         for s in range(len(self.state_coord_map)):
             for a in range(len(self.action_coord_map)):
                 self.state_action_g_dict[(str(s),self.index_action_map[a])] = []
-    
+
+        if self.prior_goal_knowledge:
+            for state in range(len(self.qtable)):
+                if str(state) not in self.holes_picked and str(state) != self.frisbee_state:
+                    self.qtable[state][1] =0.1 # 'Down'
+                    self.qtable[state][2] =0.1 # 'Right'
+
     def create_exponential_decay_epsilon_schedule(self, num_episodes, epsilon_decay=.99, epsilon_start=1.0, epsilon_min=0.1):
         """_summary_
 
@@ -720,6 +728,7 @@ class FrozenLake:
               show_greedy_policy=False,
               print_q_table= False, 
               plot_graph=False,
+              prior_goal_knowledge=False,
               save_dir='.'):
         """Training Function to train the Reinforcement Learning Algorithm.
 
@@ -731,12 +740,14 @@ class FrozenLake:
             learning_rate (_type_, optional): Learning Rate for training. Defaults to None.
         """
         self.save_dir = save_dir
+        self.prior_goal_knowledge = prior_goal_knowledge
         # reset training
         self.reset_train()
         # show the lake in human readable format
         if show_lake:
             self.show_lake()
-            
+        if print_q_table:
+            self.print_qtable()    
         print(f" =========== Training {algorithm} =========== ")
         # total_reward_list stores the final reward from each episode
         self.total_reward_list = []
@@ -765,10 +776,12 @@ class FrozenLake:
             self.plot_epsilon_schedule(self.episode_epsilon_map, ylab = 'Epsilon')
         
         # Train the algorithm (loop through the episodes)
-        for episode in tqdm(range(self.num_episodes), position=0, leave=True):
+        # for episode in tqdm(range(self.num_episodes), position=0, leave=True):
+        for episode in range(self.num_episodes):
             # if episode < self.num_episodes - 1:
             # print("Episode: ",episode + 1,"/",self.num_episodes)
-            
+            if (episode+1) % 1000 == 0:
+                print("Episode: ",episode + 1,"/",self.num_episodes , end ='\r')
             # reset lake to original configuration before running each episode
             if algorithm in ["monte_carlo_first_visit_no_exploring_starts","sarsa","qlearning"]:
                 self.reset_lake()
@@ -834,7 +847,7 @@ class FrozenLake:
             
             self.total_exploitation_list.append(self.episode_exploitation_list)
 
-
+        print("Episode: ",episode + 1,"/",self.num_episodes)
         # print Q-Table
         if print_q_table:
             self.print_qtable()
@@ -1166,12 +1179,49 @@ def plot_combined_performance_graphs(combined_total_reward_list, combined_cumula
     plt.savefig(os.path.join(save_dir,'goal_reached_percentage.png'))
 
 
-import os
-if __name__ == "__main__":
+def get_parser():
+    parser = argparse.ArgumentParser(description="FrozenLake RL")
+    parser.add_argument(
+        "--root-dir",
+        default = "task2_100000_q_table_init_0",
+        metavar="FILE",
+        help="path to root dir file",
+    )
+    parser.add_argument(
+        "--num-episodes",
+        type=int,
+        default=10000,
+        help="Num of Episodes",
+    )
+    parser.add_argument(
+        "--epsilon-schedule",
+        type=str,
+        default='exponential_decay',
+        help="epsilon_schedule"
+    )
+    parser.add_argument(
+        "--epsilon-decay",
+        type=float,
+        default=0.999975,
+        help="epsilon_decay"
+    )
+    parser.add_argument(
+        "--prior-goal-knowledge",
+        type=bool,
+        default=False,
+        help="prior_goal_knowledge"
+    )
     
 
+    return parser
+
+
+if __name__ == "__main__":
+    args = get_parser().parse_args()
     env = FrozenLake(lake_type = 'custom', start_coord = [0,0], frisbee_coord = [9,9], hole_fraction=0.25)
 
+
+    root_dir = os.path.join('/home/ngzhili/FrozenLake_RL/',args.root_dir)
     algorithm_list = ["monte_carlo_first_visit_no_exploring_starts", "sarsa","qlearning"]
     combined_total_reward_list = []
     combined_policy_diff_list = []
@@ -1181,18 +1231,19 @@ if __name__ == "__main__":
     combined_total_exploitation_list=[]
 
     # num_episodes = 100000 #'exponential_decay'
-    num_episodes = 300000 # 'interval'
+    num_episodes = args.num_episodes # 'interval'
     epsilon = 1
-    epsilon_schedule = 'interval' #'exponential_decay'# 'interval'#'exponential_decay' #'inverse' #'interval'#'exponential_decay' #'inverse' #'constant' # # #'exponential_decay'
-    epsilon_decay = 0.999975
+    epsilon_schedule = 'interval' #'exponential_decay' # ## 'interval'#'exponential_decay' #'inverse' #'interval'#'exponential_decay' #'inverse' #'constant' # # #'exponential_decay'
+    epsilon_decay = args.epsilon_decay
     discount_factor = 0.9
     learning_rate = 0.1
-    epsilon_interval={0:1,0.5:0.5,0.9:0.1}
+    epsilon_interval={0:1,0.3:0.8,0.5:0.5,0.9:0.1}
+    prior_goal_knowledge = args.prior_goal_knowledge
 
     # root_dir = "/home/ngzhili/FrozenLake_RL/task2"
-    root_dir = "/home/ngzhili/FrozenLake_RL/task2_300000"
+    # root_dir = "/home/ngzhili/FrozenLake_RL/task2_100000_q_table_init_0"
     for algorithm in algorithm_list:
-        algorithm_dir = os.path.join(root_dir,algorithm)
+        algorithm_dir = os.path.join(root_dir, algorithm)
         if not os.path.exists(algorithm_dir):
             os.makedirs(algorithm_dir)
         if algorithm == "monte_carlo_first_visit_no_exploring_starts":
@@ -1208,6 +1259,7 @@ if __name__ == "__main__":
                                                                         show_greedy_policy=True,
                                                                         print_q_table=True,
                                                                         plot_graph=True,
+                                                                        prior_goal_knowledge=prior_goal_knowledge,
                                                                         save_dir=algorithm_dir)
         else:
             total_reward_list, cumulative_reward_list, policy_diff_list, \
@@ -1222,6 +1274,7 @@ if __name__ == "__main__":
                                                                             show_greedy_policy=True,
                                                                             print_q_table=True,
                                                                             plot_graph=True,
+                                                                            prior_goal_knowledge=prior_goal_knowledge,
                                                                             save_dir=algorithm_dir)
         combined_total_reward_list.append(total_reward_list)
         combined_cumulative_reward_list.append(cumulative_reward_list)
