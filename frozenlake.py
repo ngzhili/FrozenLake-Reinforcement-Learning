@@ -1212,7 +1212,7 @@ if __name__ == "__main__":
     env = FrozenLake(lake_type = 'custom', start_coord = [0,0], frisbee_coord = [9,9], hole_fraction=0.25)
 
     root_dir = os.path.join('/home/ngzhili/FrozenLake_RL/',args.root_dir)
-    algorithm_list = ["monte_carlo_first_visit_no_exploring_starts", "sarsa","qlearning"]
+    algorithm_list = ["sarsa"]# "qlearning"#["monte_carlo_first_visit_no_exploring_starts", "sarsa","qlearning"]
     combined_total_reward_list = []
     combined_policy_diff_list = []
     combined_cumulative_reward_list = []
